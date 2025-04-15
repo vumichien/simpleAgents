@@ -1,6 +1,4 @@
 import io
-import os
-import uuid
 from datetime import datetime, timedelta
 from textwrap import dedent
 from typing import List, Tuple
@@ -25,12 +23,13 @@ from agno.tools.resend import ResendTools
 from agno.utils.log import logger
 from agno.workflow.workflow import Workflow
 from pydantic import BaseModel, Field
-from dotenv import dotenv_values
+from dotenv import load_dotenv          
+import os
 
-config = dotenv_values(".env")
+load_dotenv(override=True)
 
-credentials_path = config["GOOGLE_CALENDAR_CREDENTIALS"]
-token_path = config["GOOGLE_CALENDAR_TOKEN"]
+credentials_path = os.getenv("GOOGLE_CALENDAR_CREDENTIALS")
+token_path = os.getenv("GOOGLE_CALENDAR_TOKEN")
 
 
 class ScreeningResult(BaseModel):
@@ -68,7 +67,7 @@ class EmployeeRecruitmentWorkflow(Workflow):
     screening_agent: Agent = Agent(
         description="You are an HR agent that screens candidates for a job interview.",
         # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini"),
+        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
         instructions=dedent(
             """
             You are an expert HR agent that screens candidates for a job interview.
@@ -84,7 +83,7 @@ class EmployeeRecruitmentWorkflow(Workflow):
     interview_scheduler_agent: Agent = Agent(
         description="You are an interview scheduler agent that schedules interviews for candidates.",
         # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini"),
+        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
         instructions=dedent(
             """
             You are an interview scheduler agent that schedules interviews for candidates.
@@ -97,7 +96,6 @@ class EmployeeRecruitmentWorkflow(Workflow):
             - Only schedule interviews on business days (Monday to Friday)
             - Never schedule interviews on weekends (Saturday or Sunday)
             - Avoid scheduling on public holidays
-            - Prefer morning slots if available (10AM-12PM)
             
             IMPORTANT: When using the GoogleCalendarTools.create_event function, you must follow these steps:
             1. Call list_events() first to check for existing events
@@ -124,7 +122,7 @@ class EmployeeRecruitmentWorkflow(Workflow):
     email_writer_agent: Agent = Agent(
         description="You are an expert email writer agent that writes emails to selected candidates.",
         # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini"),
+        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
         instructions=dedent(
             """
             You are an expert email writer agent that writes emails to selected candidates.
@@ -154,7 +152,7 @@ class EmployeeRecruitmentWorkflow(Workflow):
     email_sender_agent: Agent = Agent(
         description="You are an expert email sender agent that sends emails to selected candidates.",
         # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini"),
+        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
         instructions=dedent(
             """
             You are an expert email sender agent that sends emails to selected candidates.

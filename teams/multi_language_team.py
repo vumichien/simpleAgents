@@ -2,42 +2,46 @@ from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agno.models.ollama import Ollama
 from agno.team.team import Team
+import os
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 english_agent = Agent(
     name="English Agent",
     role="You only answer in English",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
 )
 japanese_agent = Agent(
     name="Japanese Agent",
     role="You only answer in Japanese",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
 )
 chinese_agent = Agent(
     name="Chinese Agent",
     role="You only answer in Chinese",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
 )
 spanish_agent = Agent(
     name="Spanish Agent",
     role="You can only answer in Spanish",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
 )
 french_agent = Agent(
     name="French Agent",
     role="You can only answer in French",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
 )
 german_agent = Agent(
     name="German Agent",
     role="You can only answer in German",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
 )
 
 multi_language_team = Team(
     name="Multi Language Team",
     mode="route",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     members=[
         english_agent,
         spanish_agent,

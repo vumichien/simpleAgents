@@ -8,18 +8,22 @@ from agno.team import Team
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.hackernews import HackerNewsTools
 from agno.tools.newspaper4k import Newspaper4kTools
+import os
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 
 hn_researcher = Agent(
     name="HackerNews Researcher",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     role="Gets top stories from hackernews.",
     tools=[HackerNewsTools()],
 )
 
 web_searcher = Agent(
     name="Web Searcher",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     role="Searches the web for information on a topic",
     tools=[DuckDuckGoTools()],
     # add_datetime_to_instructions=True,
@@ -35,7 +39,7 @@ article_reader = Agent(
 news_agency_team = Team(
     name="HackerNews Team",
     mode="coordinate",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     members=[hn_researcher, web_searcher, article_reader],
     instructions=[
         "First, search hackernews for what the user is asking about.",

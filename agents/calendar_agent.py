@@ -1,17 +1,15 @@
 from agno.agent import Agent
 from agno.models.ollama import Ollama
+from agno.models.openai import OpenAIChat
 from agno.tools.googlecalendar import GoogleCalendarTools
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 import os
 from textwrap import dedent
 
-config = dotenv_values(".env")
+load_dotenv(override=True)
 
-credentials_path = config["GOOGLE_CALENDAR_CREDENTIALS"]
-token_path = config["GOOGLE_CALENDAR_TOKEN"]
-
-print(credentials_path)
-print(token_path)
+credentials_path = os.getenv("GOOGLE_CALENDAR_CREDENTIALS")
+token_path = os.getenv("GOOGLE_CALENDAR_TOKEN")
 
 calendar_agent = Agent(
     name="Calendar Agent",
@@ -20,7 +18,7 @@ calendar_agent = Agent(
     ],
     show_tool_calls=True,
     markdown=True,
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     debug_mode=True,
     instructions=dedent(
         """\

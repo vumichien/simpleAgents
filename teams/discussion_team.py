@@ -6,11 +6,15 @@ from agno.models.ollama import Ollama
 from agno.team.team import Team
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.hackernews import HackerNewsTools
+import os
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 reddit_researcher = Agent(
     name="Reddit Researcher",
     role="Research a topic on Reddit",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     tools=[DuckDuckGoTools()],
     add_name_to_instructions=True,
     instructions=dedent("""
@@ -22,7 +26,7 @@ reddit_researcher = Agent(
 
 hackernews_researcher = Agent(
     name="HackerNews Researcher",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     role="Research a topic on HackerNews.",
     tools=[HackerNewsTools()],
     add_name_to_instructions=True,
@@ -37,7 +41,7 @@ hackernews_researcher = Agent(
 discussion_team = Team(
     name="Discussion Team",
     mode="collaborate",
-    model=Ollama(id="llama3.2:latest"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     members=[
         reddit_researcher,
         hackernews_researcher,

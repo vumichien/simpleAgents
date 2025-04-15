@@ -6,6 +6,10 @@ from agno.document.chunking.fixed import FixedSizeChunking
 from agno.embedder.sentence_transformer import SentenceTransformerEmbedder
 from agno.models.ollama import Ollama
 from textwrap import dedent
+from dotenv import load_dotenv
+import os
+
+load_dotenv(override=True)
 
 db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
 
@@ -22,7 +26,7 @@ vector_db = PgVector(
 )
 
 knowledge_base = PDFKnowledgeBase(
-    path="simple/data/",
+    path="agents/data",
     vector_db=vector_db,
     num_documents=10,
     chunking_strategy=FixedSizeChunking(
@@ -34,8 +38,7 @@ knowledge_base = PDFKnowledgeBase(
 
 internal_document_agent = Agent(
     name="Internal Document Agent",
-    model=Ollama(id="llama3.2:latest"),
-    # model=OpenAIChat(id="gpt-4o-mini"),
+    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
     instructions=dedent("""\
     You are a helpful assistant. You are given a question and a context.
     You need to answer the question based on the context with the same language as the question.
