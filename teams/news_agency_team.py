@@ -16,22 +16,30 @@ load_dotenv(override=True)
 
 hn_researcher = Agent(
     name="HackerNews Researcher",
-    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
-    role="Gets top stories from hackernews.",
+    model=(
+        OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("LOCAL_MODEL") == "false"
+        else Ollama(id="llama3.2:latest")
+    ),
+    role="HackerNewsから最新の記事を取得します。",
     tools=[HackerNewsTools()],
 )
 
 web_searcher = Agent(
     name="Web Searcher",
-    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
-    role="Searches the web for information on a topic",
+    model=(
+        OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("LOCAL_MODEL") == "false"
+        else Ollama(id="llama3.2:latest")
+    ),
+    role="トピックに関する情報をウェブで検索します",
     tools=[DuckDuckGoTools()],
     # add_datetime_to_instructions=True,
 )
 
 article_reader = Agent(
     name="Article Reader",
-    role="Reads articles from URLs.",
+    role="URLから記事を読み込みます。",
     tools=[Newspaper4kTools()],
 )
 
@@ -39,14 +47,18 @@ article_reader = Agent(
 news_agency_team = Team(
     name="HackerNews Team",
     mode="coordinate",
-    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+    model=(
+        OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("LOCAL_MODEL") == "false"
+        else Ollama(id="llama3.2:latest")
+    ),
     members=[hn_researcher, web_searcher, article_reader],
     instructions=[
-        "First, search hackernews for what the user is asking about.",
-        "Then, ask the article reader to read the links for the stories to get more information.",
-        "Important: you must provide the article reader with the links to read.",
-        "Then, ask the web searcher to search for each story to get more information.",
-        "Finally, provide a thoughtful and engaging summary.",
+        "まず、ユーザーが質問していることについてHackerNewsを検索してください。",
+        "次に、記事リーダーに詳細情報を得るためにストーリーのリンクを読むよう依頼してください。",
+        "重要：記事リーダーに読むべきリンクを提供する必要があります。",
+        "続いて、ウェブ検索者に各ストーリーについてさらに情報を得るための検索を依頼してください。",
+        "最後に、思慮深く魅力的な要約を提供してください。",
     ],
     # response_model=Article,
     show_tool_calls=True,

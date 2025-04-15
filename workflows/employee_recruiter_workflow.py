@@ -22,6 +22,7 @@ from agno.models.ollama import Ollama
 from agno.tools.resend import ResendTools
 from agno.utils.log import logger
 from agno.workflow.workflow import Workflow
+from agno.storage.postgres import PostgresStorage
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv          
 import os
@@ -59,22 +60,25 @@ class EmployeeRecruitmentWorkflow(Workflow):
 
     description: str = dedent(
         """\
-    An intelligent employee recruitment workflow that screens candidates, schedules interviews, 
-    and sends emails to selected candidates.
+    インテリジェントな従業員採用ワークフローです。
+    候補者をスクリーニングし、面接をスケジュールし、選択された候補者にメールを送信します。
     """
     )
 
     screening_agent: Agent = Agent(
-        description="You are an HR agent that screens candidates for a job interview.",
-        # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+        description="あなたは面接のために候補者を選考する人事担当者です",
+        model=(
+            OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+            if os.getenv("LOCAL_MODEL") == "false"
+            else Ollama(id="gemma3:12b")
+        ),
         instructions=dedent(
             """
-            You are an expert HR agent that screens candidates for a job interview.
-            You are given a candidate's name and resume and job description.
-            You need to screen the candidate and determine if they are a good fit for the job.
-            You need to provide a score for the candidate from 0 to 10.
-            You need to provide a feedback for the candidate on why they are a good fit or not.
+            あなたは求人面接の候補者をスクリーニングする専門のHRエージェントです。
+            候補者の名前と履歴書、求人情報が与えられます。
+            候補者をスクリーニングし、その仕事に適しているかどうかを判断する必要があります。
+            候補者に0から10までのスコアを付ける必要があります。
+            候補者が適任である理由、またはそうでない理由についてフィードバックを提供する必要があります。
             """
         ),
         response_model=ScreeningResult,
@@ -82,32 +86,35 @@ class EmployeeRecruitmentWorkflow(Workflow):
 
     interview_scheduler_agent: Agent = Agent(
         description="You are an interview scheduler agent that schedules interviews for candidates.",
-        # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+        model=(
+            OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+            if os.getenv("LOCAL_MODEL") == "false"
+            else Ollama(id="llama3.2:latest")
+        ),
         instructions=dedent(
             """
-            You are an interview scheduler agent that schedules interviews for candidates.
-            You need to schedule interviews for the candidates using the Google Calendar tool.
-            You need to schedule the interview for the candidate at the earliest possible time between 10am and 4pm.
-            Check if the candidate and interviewer are available at the time and if the time is free in the calendar.
-            You are in Tokyo (GMT+9) timezone and the current time is {current_time}. So schedule the call in future time with reference to current time.
+            あなたは候補者の面接をスケジュールする面接スケジューラーエージェントです。
+            Googleカレンダーツールを使用して候補者の面接をスケジュールする必要があります。
+            午前10時から午後4時までの最も早い可能な時間に候補者の面接をスケジュールしてください。
+            候補者と面接官がその時間に利用可能かどうか、およびカレンダーの時間が空いているかどうかを確認してください。
+            あなたは東京（GMT+9）タイムゾーンにいて、現在の時刻は{current_time}です。そのため、現在の時刻を参考に将来の時間に通話をスケジュールしてください。
             
-            IMPORTANT SCHEDULING RULES:
-            - Only schedule interviews on business days (Monday to Friday)
-            - Never schedule interviews on weekends (Saturday or Sunday)
-            - Avoid scheduling on public holidays
+            重要なスケジュール規則：
+            - 面接は営業日（月曜日から金曜日）にのみスケジュールしてください
+            - 週末（土曜日または日曜日）には絶対に面接をスケジュールしないでください
+            - 祝日にスケジュールすることを避けてください
             
-            IMPORTANT: When using the GoogleCalendarTools.create_event function, you must follow these steps:
-            1. Call list_events() first to check for existing events
-            2. Create a new event with specific parameters:
-                - start_datetime and end_datetime should be ISO format (YYYY-MM-DDTHH:MM:SS)
-                - Make sure to include the timezone parameter as 'Asia/Tokyo'
-                - Include both the candidate and interviewer in the attendees list
-                - Set a descriptive title and add details in the description
-            3. Make sure to extract and store the event URL from the response
-            4. Format the call_time as a human-readable string in the response
-            5. ALWAYS ensure both call_time and url are non-empty in your response
-            6. CRITICALLY IMPORTANT: The event must be scheduled for 2025 or later, not in the past. Schedule at least 2 days in the future from the current date.
+            重要：GoogleCalendarTools.create_event関数を使用する際には、以下の手順に従う必要があります：
+            1. まずlist_events()を呼び出して既存のイベントを確認する
+            2. 特定のパラメータで新しいイベントを作成する：
+                - start_datetimeとend_datetimeはISO形式である必要があります（YYYY-MM-DDTHH:MM:SS）
+                - timezoneパラメータとして'Asia/Tokyo'を必ず含めてください
+                - 候補者と面接官の両方を出席者リストに含めてください
+                - 説明的なタイトルを設定し、詳細を説明欄に追加してください
+            3. 応答からイベントURLを抽出して保存してください
+            4. レスポンスではcall_timeを人間が読みやすい文字列形式にしてください
+            5. 常にレスポンスでcall_timeとurlの両方が空でないことを確認してください
+            6. 非常に重要：イベントは2025年以降に予定され、過去ではないようにしてください。現在の日付から少なくとも2日後にスケジュールしてください。
             """
         ),
         tools=[
@@ -122,28 +129,32 @@ class EmployeeRecruitmentWorkflow(Workflow):
     email_writer_agent: Agent = Agent(
         description="You are an expert email writer agent that writes emails to selected candidates.",
         # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+        model=(
+            OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+            if os.getenv("LOCAL_MODEL") == "false"
+            else Ollama(id="suzume-multi:latest ")
+        ),
         instructions=dedent(
             """
-            You are an expert email writer agent that writes emails to selected candidates.
-            You need to write an email and send it to the candidates using the Resend tool.
-            You represent the company and the job position.
-            You need to write an email that is concise and to the point.
-            You need to write an email that is friendly and professional.
-            You need to write an email that is not too formal and not too informal.
-            The body of the email should be a detailed explanation of the job position and the candidate's qualifications.
-            IMPORTANT: Format the email using HTML tags for proper structure.
-            Follow this structure for your email formatting:
-            "<p>Dear [Candidate Name],</p>",
-            "<p>I am pleased to inform you that...</p>",
-            "<p>Your interview is scheduled for [Date] at [Time]...</p>",
-            "<p>During this interview...</p>",
-            "<p>Please feel free to reach out if you have any questions.</p>",
-            "<p>Best regards,<br>",
-            "[Your Name]<br>",
-            "[Your Title]<br>",
-            "[Your Email]</p>",
-            "Make sure to use HTML tags like <p>, <br>, <strong>, <ul>/<li> for better formatting.",
+            あなたは選ばれた候補者にメールを書く専門のメール作成エージェントです。
+            Resendツールを使用して候補者にメールを書き、送信する必要があります。
+            あなたは会社と求人ポジションを代表しています。
+            簡潔で要点を押さえたメールを書く必要があります。
+            フレンドリーでプロフェッショナルなメールを書く必要があります。
+            あまりにも形式ばっておらず、あまりにもカジュアルでもないメールを書く必要があります。
+            メールの本文は、求人ポジションと候補者の資格についての詳細な説明であるべきです。
+            重要：適切な構造のためにHTMLタグを使用してメールをフォーマットしてください。
+            メールのフォーマットには以下の構造に従ってください：
+            "<p>[候補者名]様、</p>",
+            "<p>ご連絡いたします...</p>",
+            "<p>面接は[日付]の[時間]に予定されています...</p>",
+            "<p>この面接では...</p>",
+            "<p>ご質問があればいつでもお問い合わせください。</p>",
+            "<p>敬具、<br>",
+            "[あなたの名前]<br>",
+            "[あなたの役職]<br>",
+            "[あなたのメール]</p>",
+            "より良いフォーマットのために<p>、<br>、<strong>、<ul>/<li>などのHTMLタグを使用してください。",
             """
         ),
         response_model=Email,
@@ -152,14 +163,18 @@ class EmployeeRecruitmentWorkflow(Workflow):
     email_sender_agent: Agent = Agent(
         description="You are an expert email sender agent that sends emails to selected candidates.",
         # model=Ollama(id="llama3.2:latest"),
-        model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+        model=(
+            OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+            if os.getenv("LOCAL_MODEL") == "false"
+            else Ollama(id="llama3.2:latest")
+        ),
         instructions=dedent(
             """
-            You are an expert email sender agent that sends emails to selected candidates.
-            You need to send an email to the candidate using the Resend tool.
-            You will be given the email subject and body and you need to send it to the candidate.
-            IMPORTANT: The email body is already in HTML format, do not modify it.
-            "Send the HTML content exactly as provided to ensure proper formatting in the email.",
+            あなたは選ばれた候補者にメールを送信する専門のメール送信エージェントです。
+            Resendツールを使用して候補者にメールを送信する必要があります。
+            メールの件名と本文が与えられるので、それを候補者に送信する必要があります。
+            重要：メール本文はすでにHTML形式になっているため、変更しないでください。
+            "適切なフォーマットをメールで確保するために、提供されたHTMLコンテンツをそのまま送信してください。"
             """
         ),
         tools=[ResendTools(from_email="onboarding@resend.dev")],
@@ -288,16 +303,16 @@ class EmployeeRecruitmentWorkflow(Workflow):
         selected_candidates = []
         job_description = dedent(
             """
-            We are hiring for backend and systems engineers!
-            Join our team building the future of agentic software
+            バックエンドおよびシステムエンジニアを募集しています！
+            エージェント型ソフトウェアの未来を構築するチームに参加しませんか
 
-            Apply if:
-            🧠 You know your way around Python, typescript, docker, and AWS.
-            ⚙️ Love to build in public and contribute to open source.
-            🚀 Are ok dealing with the pressure of an early-stage startup.
-            🏆 Want to be a part of the biggest technological shift since the internet.
-            🌟 Bonus: experience with infrastructure as code.
-            🌟 Bonus: starred Agno repo.
+            以下の条件に当てはまる方は応募してください：
+            🧠 Python、TypeScript、Docker、AWSに精通している方。
+            ⚙️ 公開での開発とオープンソースへの貢献が好きな方。
+            🚀 初期スタートアップのプレッシャーに対応できる方。
+            🏆 インターネット以来最大の技術的変革の一部になりたい方。
+            🌟 ボーナス：Infrastructure as Codeの経験がある方。
+            🌟 ボーナス：Agnoリポジトリにスターを付けている方。
             """
         )
         if not candidate_resume_urls:
@@ -416,30 +431,30 @@ class EmployeeRecruitmentWorkflow(Workflow):
                         # Construct a well-formatted email using HTML
                         # Format meeting URL for better display
                         meeting_url = scheduled_call.content.url
-                        meeting_link = f'<a href="{meeting_url}">Click here to join the meeting</a>'
+                        meeting_link = f'<a href="{meeting_url}">ミーティングに参加するにはこちらをクリックしてください</a>'
 
                         input = dedent(
                             f"""
-                            Write a well-formatted HTML email to:
-                            - Candidate name: {selected_candidate.name}
-                            - Candidate email: {selected_candidate.email}
-                            - Interview scheduled at: {scheduled_call.content.call_time}
-                            - Meeting link: {meeting_link} (this is already formatted as HTML, include it exactly as provided)
-                            - Job Position: Backend and Systems Engineer
-                            - Company: Detomo Inc.
+                            以下の情報でHTML形式のメールを作成してください：
+                            - 候補者名: {selected_candidate.name}
+                            - 候補者メール: {selected_candidate.email}
+                            - 面接予定時間: {scheduled_call.content.call_time}
+                            - ミーティングリンク: {meeting_link} (これはすでにHTML形式になっています。提供されたとおりに含めてください)
+                            - 職種: バックエンドおよびシステムエンジニア
+                            - 会社名: Detomo Inc.
                             
-                            Congratulate them for passing the initial screening and being selected for an interview.
+                            初期スクリーニングに合格し、面接に選ばれたことをお祝いするメールを作成してください。
                             
-                            The email should be from Tran Trung Thanh, CTO (email: thanh_tt@detomo.co.jp)
+                            メールの送信者はCTOのTran Trung Thanh（メール: thanh_tt@detomo.co.jp）です。
                             
-                            IMPORTANT:
-                            1. Format the email using HTML tags (<p>, <br>, <strong>, etc.) for proper structure
-                            2. Make sure the content is well-organized with clear sections
-                            3. Include a proper signature with the sender's name, title, and company name (Detomo Inc.)
-                            4. Include the meeting link exactly as provided (it's already an HTML anchor tag)
-                            5. The email should look professional when rendered in an email client
-                            6. Make sure to mention the job position (Backend and Systems Engineer) and company name (Detomo Inc.) in the email body
-                        """
+                            重要事項:
+                            1. 適切な構造のためにHTMLタグ（<p>、<br>、<strong>など）を使用してメールをフォーマットしてください
+                            2. コンテンツが明確なセクションで整理されていることを確認してください
+                            3. 送信者の名前、役職、会社名（Detomo Inc.）を含む適切な署名を含めてください
+                            4. ミーティングリンクは提供されたとおりに含めてください（すでにHTMLアンカータグになっています）
+                            5. メールはメールクライアントでレンダリングされた際にプロフェッショナルに見えるようにしてください
+                            6. メール本文に職種（バックエンドおよびシステムエンジニア）と会社名（Detomo Inc.）を必ず言及してください
+                            """
                         ).strip()
 
                         email = self.email_writer_agent.run(input)
@@ -447,11 +462,11 @@ class EmployeeRecruitmentWorkflow(Workflow):
                         # Debug email content
                         if email.content:
                             logger.info(
-                                f"Email content: subject='{email.content.subject}', body preview='{email.content.body[:50]}...'"
+                                f"メール内容: 件名='{email.content.subject}', 本文プレビュー='{email.content.body}...'"
                             )
                         else:
                             logger.error(
-                                "Email writer agent failed to generate email content"
+                                "メール作成エージェントがメール内容の生成に失敗しました"
                             )
 
                         if email.content:
@@ -485,26 +500,26 @@ class EmployeeRecruitmentWorkflow(Workflow):
                                 # Prepare the email sending command
                                 input = dedent(
                                     f"""
-                                    Send email to {selected_candidate.email} with:
+                                    以下の内容で{selected_candidate.email}にメールを送信してください：
                                     
-                                    Subject: {email.content.subject}
+                                    件名: {email.content.subject}
                                     
-                                    HTML Body: 
+                                    HTML本文: 
                                     {html_body}
                                     
-                                    IMPORTANT: The body is already in HTML format, send it as-is without modification.
+                                    重要: 本文はすでにHTML形式になっているため、変更せずにそのまま送信してください。
                                 """
                                 ).strip()
 
                                 email_response = self.email_sender_agent.run(input)
-                                logger.info(f"Email sending result: {email_response}")
+                                logger.info(f"メール送信結果: {email_response}")
                             except Exception as e:
-                                logger.error(f"Error sending email: {str(e)}")
+                                logger.error(f"メール送信エラー: {str(e)}")
                     except Exception as e:
-                        logger.error(f"Error writing email: {str(e)}")
+                        logger.error(f"メール作成エラー: {str(e)}")
             except Exception as e:
                 logger.error(
-                    f"Error scheduling interview for {selected_candidate.name}: {str(e)}"
+                    f"{selected_candidate.name}の面接スケジュール中にエラーが発生しました: {str(e)}"
                 )
                 # Continue with next candidate
                 continue
@@ -513,9 +528,9 @@ class EmployeeRecruitmentWorkflow(Workflow):
 
         return RunResponse(
             content=(
-                f"This candidate was selected for the interview. \n\n Feedback: {feedback}  \n\n The meeting invitation is sent to the candidate at {call_time}"
+                f"この候補者は面接に選ばれました。 \n\n フィードバック: {feedback}  \n\n 会議の招待状は候補者に {call_time} に送信されました。"
                 if len(selected_candidates) > 0
-                else f"This candidate was not selected for the interview. \n\n Feedback: {feedback}"
+                else f"この候補者は面接に選ばれませんでした。 \n\n フィードバック: {feedback}"
             ),
             workflow_id=self.workflow_id,
         )
@@ -523,6 +538,12 @@ class EmployeeRecruitmentWorkflow(Workflow):
 
 employee_recruiter_workflow = EmployeeRecruitmentWorkflow(
     workflow_id="employee-recruiter-workflow",
+    storage=PostgresStorage(
+        table_name="employee_recruiter_workflows",
+        db_url="postgresql+psycopg://ai:ai@localhost:5532/ai",
+        auto_upgrade_schema=True,
+        mode="workflow",
+    ),
     debug_mode=True,
 )
 # result = employee_recruiter_workflow.run(

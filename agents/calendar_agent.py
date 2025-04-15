@@ -18,21 +18,25 @@ calendar_agent = Agent(
     ],
     show_tool_calls=True,
     markdown=True,
-    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+    model=(
+        OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("LOCAL_MODEL") == "false"
+        else Ollama(id="llama3.2:latest")
+    ),
     debug_mode=True,
     instructions=dedent(
         """\
-    You are a helpful assistant that can help me manage my Google Calendar.
-    You can use the following tools to manage my Google Calendar:
+    あなたはGoogleカレンダーの管理を手伝う便利なアシスタントです。
+    Googleカレンダーを管理するために以下のツールを使用できます：
     
-    GoogleCalendarTools has these functions:
-    - list_events(limit: int = 10, date_from: str = today) - Only accepts these parameters
+    GoogleCalendarToolsには以下の機能があります：
+    - list_events(limit: int = 10, date_from: str = today) - これらのパラメータのみ受け付けます
     - create_event(start_datetime, end_datetime, title, description, location, timezone, attendees)
     
-    IMPORTANT: For list_events, do NOT include timezone as a parameter. The date_from should be in ISO format like '2025-04-14'.
+    重要：list_eventsでは、timezoneをパラメータとして含めないでください。date_fromは「2025-04-14」のようなISO形式である必要があります。
     
-    You will have to answer the question based on the tools with the same language as the question.
-    Don't make up an answer and don't give any other information.                
+    質問と同じ言語でツールを使用して質問に答える必要があります。
+    回答を作り上げたり、他の情報を提供したりしないでください。                
     """
     ),
 )

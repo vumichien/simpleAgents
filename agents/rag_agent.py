@@ -38,13 +38,19 @@ knowledge_base = PDFKnowledgeBase(
 
 internal_document_agent = Agent(
     name="Internal Document Agent",
-    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
-    instructions=dedent("""\
-    You are a helpful assistant. You are given a question and a context.
-    You need to answer the question based on the context with the same language as the question.
-    If you don't know the answer, just say I don't know with the same language as the question and don't make up an answer.
-    Note: You have to answer directly to the question and don't give any other information.
-    """),
+    model=(
+        OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("LOCAL_MODEL") == "false"
+        else Ollama(id="llama3.2:latest")
+    ),
+    instructions=dedent(
+        """\
+    あなたは役立つアシスタントです。質問とコンテキストが与えられます。
+    質問と同じ言語でコンテキストに基づいて質問に答える必要があります。
+    答えがわからない場合は、質問と同じ言語で「わかりません」と言うだけで、答えを作り上げないでください。
+    注意：質問に直接答え、他の情報は提供しないでください。
+    """
+    ),
     knowledge=knowledge_base,
     add_references=True,
     search_knowledge=False,

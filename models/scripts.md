@@ -1,0 +1,1 @@
+ollama create suzume-multi -f ./Modelfile

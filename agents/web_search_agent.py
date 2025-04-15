@@ -8,10 +8,14 @@ load_dotenv(override=True)
 
 web_search_agent = Agent(
     name="Web Search Agent",
-    model=OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("LOCAL_MODEL") == "false" else Ollama(id="llama3.2:latest"),
+    model=(
+        OpenAIChat(id="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("LOCAL_MODEL") == "false"
+        else Ollama(id="llama3.2:latest")
+    ),
     # model=Ollama(id="qwen2.5:7b"),
     tools=[DuckDuckGoTools()],
-    instructions=["Always include sources"],
+    instructions=["常に情報源を含めてください"],
     show_tool_calls=True,
     markdown=True,
 )
