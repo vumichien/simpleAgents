@@ -1,13 +1,14 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 import glob
 import os
 from langchain_text_splitters import SpacyTextSplitter
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
-load_dotenv()
+
+config = dotenv_values(".env")
 
 def load_documents(directory="data"):
     """Load documents from a directory of PDF files."""
@@ -29,12 +30,12 @@ def load_documents(directory="data"):
     print(f"Created {len(chunks)} document chunks")
     return chunks
 
-client = QdrantClient(url=os.getenv("QDRANT_URL"))
+client = QdrantClient(url=config["QDRANT_URL"])
 embeddings = HuggingFaceEmbeddings(model_name="cl-nagoya/sup-simcse-ja-base")
 
-if not client.collection_exists(os.getenv("QDRANT_COLLECTION_NAME")):
+if not client.collection_exists(config["QDRANT_COLLECTION_NAME"]):
     client.create_collection(
-        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        collection_name=config["QDRANT_COLLECTION_NAME"],
         vectors_config=VectorParams(size=768, distance=Distance.COSINE),
     )
 
@@ -43,11 +44,11 @@ docs = load_documents("simple/data")
 docsearch = QdrantVectorStore.from_documents(
     docs,
     embeddings,
-    url=os.getenv("QDRANT_URL"),
-    api_key=os.getenv("QDRANT_API_KEY"),
-    collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+    url=config["QDRANT_URL"],
+    api_key=config["QDRANT_API_KEY"],
+    collection_name=config["QDRANT_COLLECTION_NAME"],
     prefer_grpc=True,
-    force_recreate=not client.collection_exists(os.getenv("QDRANT_COLLECTION_NAME")),
+    force_recreate=not client.collection_exists(config["QDRANT_COLLECTION_NAME"]),
 )
 
 

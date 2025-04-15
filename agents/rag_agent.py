@@ -47,4 +47,4 @@ internal_document_agent = Agent(
     search_knowledge=False,
     debug_mode=True,
 )
-internal_document_agent.print_response("入札書の提出場所どころですか")
+# internal_document_agent.print_response("入札書の提出場所どころですか")
