@@ -79,6 +79,8 @@ class EmployeeRecruitmentWorkflow(Workflow):
             候補者をスクリーニングし、その仕事に適しているかどうかを判断する必要があります。
             候補者に0から10までのスコアを付ける必要があります。
             候補者が適任である理由、またはそうでない理由についてフィードバックを提供する必要があります。
+            フィードバックを箇条書きで提示する必要があります。
+            
             """
         ),
         response_model=ScreeningResult,
@@ -441,7 +443,7 @@ class EmployeeRecruitmentWorkflow(Workflow):
                             - 面接予定時間: {scheduled_call.content.call_time}
                             - ミーティングリンク: {meeting_link} (これはすでにHTML形式になっています。提供されたとおりに含めてください)
                             - 職種: バックエンドおよびシステムエンジニア
-                            - 会社名: Detomo Inc.
+                            - 会社名: デトモ株式会社
                             
                             初期スクリーニングに合格し、面接に選ばれたことをお祝いするメールを作成してください。
                             
@@ -450,10 +452,10 @@ class EmployeeRecruitmentWorkflow(Workflow):
                             重要事項:
                             1. 適切な構造のためにHTMLタグ（<p>、<br>、<strong>など）を使用してメールをフォーマットしてください
                             2. コンテンツが明確なセクションで整理されていることを確認してください
-                            3. 送信者の名前、役職、会社名（Detomo Inc.）を含む適切な署名を含めてください
+                            3. 送信者の名前、役職、会社名（デトモ株式会社）を含む適切な署名を含めてください
                             4. ミーティングリンクは提供されたとおりに含めてください（すでにHTMLアンカータグになっています）
                             5. メールはメールクライアントでレンダリングされた際にプロフェッショナルに見えるようにしてください
-                            6. メール本文に職種（バックエンドおよびシステムエンジニア）と会社名（Detomo Inc.）を必ず言及してください
+                            6. メール本文に職種（バックエンドおよびシステムエンジニア）と会社名（デトモ株式会社）を必ず言及してください
                             """
                         ).strip()
 
@@ -528,9 +530,9 @@ class EmployeeRecruitmentWorkflow(Workflow):
 
         return RunResponse(
             content=(
-                f"この候補者は面接に選ばれました。 \n\n フィードバック: {feedback}  \n\n 会議の招待状は候補者に {call_time} に送信されました。"
+                f"仕事内容: {job_description} \n\n この候補者は面接に選ばれました。 \n\n フィードバック: {feedback}  \n\n 会議の招待状は候補者に {call_time} に送信されました。　\n\n 会議リンク: {meeting_url}"
                 if len(selected_candidates) > 0
-                else f"この候補者は面接に選ばれませんでした。 \n\n フィードバック: {feedback}"
+                else f"仕事内容: {job_description} \n\n この候補者は面接に選ばれませんでした。 \n\n フィードバック: {feedback}"
             ),
             workflow_id=self.workflow_id,
         )
