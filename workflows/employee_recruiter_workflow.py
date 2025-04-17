@@ -74,7 +74,7 @@ class EmployeeRecruitmentWorkflow(Workflow):
             You are given a candidate's name and resume and job description.
             You need to screen the candidate and determine if they are a good fit for the job.
             You need to provide a score for the candidate from 0 to 10.
-            You need to provide a feedback for the candidate on why they are a good fit or not.
+            You need to provide a feedback for the candidate on why they are a good fit or not, present the feedback in bullet points.
             """
         ),
         response_model=ScreeningResult,
@@ -297,7 +297,6 @@ class EmployeeRecruitmentWorkflow(Workflow):
             🚀 Are ok dealing with the pressure of an early-stage startup.
             🏆 Want to be a part of the biggest technological shift since the internet.
             🌟 Bonus: experience with infrastructure as code.
-            🌟 Bonus: starred Agno repo.
             """
         )
         if not candidate_resume_urls:
@@ -513,9 +512,9 @@ class EmployeeRecruitmentWorkflow(Workflow):
 
         return RunResponse(
             content=(
-                f"This candidate was selected for the interview. \n\n Feedback: {feedback}  \n\n The meeting invitation is sent to the candidate at {call_time}"
+                f"Job description: {job_description} \n\n This candidate was selected for the interview. \n\n Feedback: {feedback}  \n\n The meeting invitation is sent to the candidate at {call_time}"
                 if len(selected_candidates) > 0
-                else f"This candidate was not selected for the interview. \n\n Feedback: {feedback}"
+                else f"Job description: {job_description} \n\n This candidate was not selected for the interview. \n\n Feedback: {feedback}"
             ),
             workflow_id=self.workflow_id,
         )
