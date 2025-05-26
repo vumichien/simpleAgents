@@ -10,3 +10,4 @@ credentials.json
 token.json
 __pycache__/playground.cpython-311.pyc
 *.gguf
+teams/data/*
